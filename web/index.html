@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventario</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial; }
+    body { margin: 2rem; }
+    .card { max-width: 980px; border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem; }
+    .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+    input, button { padding: .55rem .8rem; font-size: 1rem; }
+    button { cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #e8e8e8; padding: .6rem .7rem; text-align: left; }
+    thead { background: #fafafa; }
+    .muted { color: #666; }
+    .error { color: #b00020; margin-top: .75rem; white-space: pre-wrap; }
+    code { background: #f6f6f6; padding: .15rem .35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Inventario</h1>
+
+    <div class="row">
+      <label for="store"><strong>Tienda:</strong></label>
+      <input id="store" placeholder="p. ej. Berlin" />
+      <button id="btnAll">Cargar todo</button>
+      <button id="btnStore">Cargar tienda</button>
+      <button id="btnClear">Limpiar</button>
+      <span class="muted" id="status"></span>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <table id="tbl" style="display:none;">
+      <thead>
+        <tr>
+          <th>Store</th>
+          <th>Item</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    // Por defecto usamos TU API. Aún puedes sobreescribir con ?api=...
+    const API_DEFAULT = "https://793t28gco4.execute-api.us-east-1.amazonaws.com";
+
+    function getApiBase() {
+      const u = new URL(window.location.href);
+      return u.searchParams.get("api") || localStorage.getItem("API_URL") || API_DEFAULT;
+    }
+
+    const apiBase = (getApiBase() || "").replace(/\/$/, "");
+    if (apiBase) localStorage.setItem("API_URL", apiBase);
+
+    const apiEl = document.getElementById("api");
+    if (apiEl) apiEl.textContent = apiBase || "(NO CONFIGURADA)";
+
+    const $tbl = document.getElementById("tbl");
+    const $tbody = $tbl.querySelector("tbody");
+    const $error = document.getElementById("error");
+    const $status = document.getElementById("status");
+
+    function setStatus(msg) { $status.textContent = msg || ""; }
+    function clearError() { $error.textContent = ""; }
+    function showError(msg) { $error.textContent = msg; }
+    function clearTable() { $tbody.innerHTML = ""; $tbl.style.display = "none"; }
+
+    function normalize(data) {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
+      return [data];
+    }
+
+    function render(rows) {
+      clearTable();
+      if (!rows.length) { setStatus("Sin datos."); return; }
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.store ?? r.Store ?? ""}</td>
+          <td>${r.item ?? r.Item ?? ""}</td>
+          <td>${r.count ?? r.Count ?? ""}</td>
+        `;
+        $tbody.appendChild(tr);
+      }
+      $tbl.style.display = "";
+      setStatus(`Mostrando ${rows.length} fila(s).`);
+    }
+
+    async function fetchJson(path) {
+      clearError();
+      if (!apiBase) { showError("Configura la API con ?api=https://..."); return []; }
+      setStatus("Cargando...");
+
+      const res = await fetch(apiBase + path, { method: "GET" });
+      const txt = await res.text();
+
+      if (!res.ok) {
+        setStatus("");
+        showError(`HTTP ${res.status}\n${txt}`);
+        return [];
+      }
+
+      setStatus("");
+      try {
+        return JSON.parse(txt);
+      } catch {
+        return txt;
+      }
+    }
+
+    document.getElementById("btnAll").addEventListener("click", async () => {
+      const data = await fetchJson("/items");
+      render(normalize(data));
+    });
+
+    document.getElementById("btnStore").addEventListener("click", async () => {
+      const store = document.getElementById("store").value.trim();
+      if (!store) { showError("Escribe una tienda, por ejemplo: Berlin"); return; }
+      const data = await fetchJson("/items/" + encodeURIComponent(store));
+      render(normalize(data));
+    });
+
+    document.getElementById("btnClear").addEventListener("click", () => {
+      clearError(); clearTable(); setStatus("");
+    });
+  </script>
+</body>
+</html>
+

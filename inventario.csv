@@ -1,0 +1,81 @@
+store,item,count
+Berlin,Cafe en grano 1kg,42
+Berlin,Leche entera 1L,28
+Berlin,Leche sin lactosa 1L,14
+Berlin,Bebida de avena 1L,19
+Berlin,Azucar 1kg,23
+Berlin,Harina 1kg,17
+Berlin,Mantequilla 250g,12
+Berlin,Huevos docena,21
+Berlin,Pan de molde,16
+Berlin,Croissant,34
+Berlin,Muffin chocolate,18
+Berlin,Galletas,25
+Berlin,Chocolate caliente,11
+Berlin,Te negro,15
+Berlin,Te verde,13
+Berlin,Agua 1.5L,30
+Berlin,Zumo naranja 1L,9
+Berlin,Servilletas,50
+Berlin,Vasos carton,80
+Berlin,Tapas vasos,80
+Madrid,Cafe en grano 1kg,35
+Madrid,Leche entera 1L,22
+Madrid,Leche sin lactosa 1L,10
+Madrid,Bebida de avena 1L,16
+Madrid,Azucar 1kg,20
+Madrid,Harina 1kg,14
+Madrid,Mantequilla 250g,9
+Madrid,Huevos docena,18
+Madrid,Pan de molde,12
+Madrid,Croissant,29
+Madrid,Muffin chocolate,15
+Madrid,Galletas,21
+Madrid,Chocolate caliente,8
+Madrid,Te negro,12
+Madrid,Te verde,10
+Madrid,Agua 1.5L,26
+Madrid,Zumo naranja 1L,7
+Madrid,Servilletas,60
+Madrid,Vasos carton,75
+Madrid,Tapas vasos,75
+Paris,Cafe en grano 1kg,40
+Paris,Leche entera 1L,25
+Paris,Leche sin lactosa 1L,12
+Paris,Bebida de avena 1L,18
+Paris,Azucar 1kg,22
+Paris,Harina 1kg,16
+Paris,Mantequilla 250g,11
+Paris,Huevos docena,19
+Paris,Pan de molde,14
+Paris,Croissant,31
+Paris,Muffin chocolate,17
+Paris,Galletas,23
+Paris,Chocolate caliente,10
+Paris,Te negro,14
+Paris,Te verde,12
+Paris,Agua 1.5L,28
+Paris,Zumo naranja 1L,8
+Paris,Servilletas,55
+Paris,Vasos carton,78
+Paris,Tapas vasos,78
+Valencia,Cafe en grano 1kg,27
+Valencia,Leche entera 1L,19
+Valencia,Leche sin lactosa 1L,8
+Valencia,Bebida de avena 1L,13
+Valencia,Azucar 1kg,16
+Valencia,Harina 1kg,12
+Valencia,Mantequilla 250g,7
+Valencia,Huevos docena,15
+Valencia,Pan de molde,10
+Valencia,Croissant,24
+Valencia,Muffin chocolate,12
+Valencia,Galletas,18
+Valencia,Chocolate caliente,6
+Valencia,Te negro,9
+Valencia,Te verde,8
+Valencia,Agua 1.5L,20
+Valencia,Zumo naranja 1L,5
+Valencia,Servilletas,45
+Valencia,Vasos carton,62
+Valencia,Tapas vasos,62

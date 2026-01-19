@@ -1,0 +1,10 @@
+﻿{
+  "TableName": "Inventory",
+  "Key": {
+    "Store": {"S": "Berlin"},
+    "Item": {"S": "StockPrueba"}
+  },
+  "UpdateExpression": "SET #c = :v",
+  "ExpressionAttributeNames": {"#c": "Count"},
+  "ExpressionAttributeValues": {":v": {"N": "0"}}
+}

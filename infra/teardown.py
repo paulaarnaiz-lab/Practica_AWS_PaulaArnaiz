@@ -10,7 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def empty_bucket(s3, bucket: str):
-    # borra objetos y versiones si las hubiera
     try:
         paginator = s3.get_paginator("list_object_versions")
         for page in paginator.paginate(Bucket=bucket):
@@ -22,10 +21,8 @@ def empty_bucket(s3, bucket: str):
             if objs:
                 s3.delete_objects(Bucket=bucket, Delete={"Objects": objs})
     except ClientError:
-        # si no hay versiones habilitadas, cae aquí o no existe bucket
         pass
 
-    # borra objetos normales
     try:
         paginator = s3.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=bucket):
@@ -61,7 +58,6 @@ def main():
 
     print("== TEARDOWN ==")
 
-    # 1) API Gateway: borrar API por nombre
     try:
         apis = apigw.get_apis().get("Items", [])
         for a in apis:
@@ -71,10 +67,8 @@ def main():
     except ClientError as e:
         print("API delete error:", e)
 
-    # 2) Event source mappings + Lambdas
     for fn in [fn_a, fn_b, fn_c]:
         try:
-            # borrar mappings (para C suele existir)
             mappings = lamb.list_event_source_mappings(FunctionName=fn).get("EventSourceMappings", [])
             for m in mappings:
                 try:
@@ -88,13 +82,11 @@ def main():
         except ClientError:
             pass
 
-    # 3) SNS topic por nombre
     try:
         topics = sns.list_topics().get("Topics", [])
         for t in topics:
             arn = t["TopicArn"]
             if arn.endswith(":" + topic_name):
-                # borrar subscripciones
                 subs = sns.list_subscriptions_by_topic(TopicArn=arn).get("Subscriptions", [])
                 for s in subs:
                     if s.get("SubscriptionArn") and s["SubscriptionArn"] != "PendingConfirmation":
@@ -107,14 +99,12 @@ def main():
     except ClientError as e:
         print("SNS delete error:", e)
 
-    # 4) DynamoDB table
     try:
         ddb.delete_table(TableName=table_name)
         print("Deleted DynamoDB table:", table_name)
     except ClientError:
         pass
 
-    # 5) Buckets (vaciar y borrar)
     for b in [uploads_bucket, web_bucket]:
         try:
             empty_bucket(s3, b)

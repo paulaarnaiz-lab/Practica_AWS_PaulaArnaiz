@@ -11,9 +11,6 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[1]
 
 
-# -------------------------
-# ZIP helpers
-# -------------------------
 def zip_lambda(src_dir: Path, out_zip: Path) -> None:
     out_zip.parent.mkdir(parents=True, exist_ok=True)
     if out_zip.exists():
@@ -25,9 +22,6 @@ def zip_lambda(src_dir: Path, out_zip: Path) -> None:
                 z.write(p, arcname=arcname)
 
 
-# -------------------------
-# AWS helpers
-# -------------------------
 def ensure_bucket(s3, bucket_name: str, region: str) -> None:
     try:
         s3.head_bucket(Bucket=bucket_name)
@@ -42,10 +36,6 @@ def ensure_bucket(s3, bucket_name: str, region: str) -> None:
 
 
 def ensure_ddb_table_with_stream(ddb, table_name: str) -> str:
-    """
-    Ensure table exists and streams are enabled.
-    Returns stream ARN (may be None if not enabled).
-    """
     try:
         desc = ddb.describe_table(TableName=table_name)
         table = desc["Table"]
@@ -66,14 +56,12 @@ def ensure_ddb_table_with_stream(ddb, table_name: str) -> str:
         ddb.get_waiter("table_exists").wait(TableName=table_name)
         table = ddb.describe_table(TableName=table_name)["Table"]
 
-    # Enable streams if missing
     stream_spec = table.get("StreamSpecification") or {}
     if not stream_spec.get("StreamEnabled"):
         ddb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )
-        # wait until active
         waiter = ddb.get_waiter("table_exists")
         waiter.wait(TableName=table_name)
         table = ddb.describe_table(TableName=table_name)["Table"]
@@ -238,7 +226,6 @@ def ensure_http_api(apigw, lambda_client, api_name: str, lambda_arn: str, region
     except ClientError:
         apigw.create_stage(ApiId=api_id, StageName="$default", AutoDeploy=True)
 
-    # API Gateway -> Lambda permission
     stmt_id = f"apigw-{api_id}"
     try:
         lambda_client.add_permission(
@@ -288,15 +275,12 @@ def ensure_sns_topic_and_sub(sns, topic_name: str, email: str | None):
     topic_arn = sns.create_topic(Name=topic_name)["TopicArn"]
 
     if email:
-        # idempotencia básica: si ya existe subscripción, no la duplica siempre (depende del estado),
-        # pero aunque se repita, no rompe la práctica.
         sns.subscribe(TopicArn=topic_arn, Protocol="email", Endpoint=email)
 
     return topic_arn
 
 
 def ensure_event_source_mapping(lambda_client, function_arn: str, stream_arn: str):
-    # Reutiliza si ya existe
     mappings = lambda_client.list_event_source_mappings(FunctionName=function_arn).get("EventSourceMappings", [])
     for m in mappings:
         if m.get("EventSourceArn") == stream_arn:
@@ -313,9 +297,6 @@ def ensure_event_source_mapping(lambda_client, function_arn: str, stream_arn: st
     return resp["UUID"]
 
 
-# -------------------------
-# Main
-# -------------------------
 def main():
     load_dotenv(ROOT / ".env")
 
@@ -348,16 +329,13 @@ def main():
     print(f"Account: {account_id}")
     print(f"Lambda Role: {lambda_role_arn}")
 
-    # Buckets
     ensure_bucket(s3, uploads_bucket, region)
     ensure_bucket(s3, web_bucket, region)
 
-    # DynamoDB (+ streams)
     stream_arn = ensure_ddb_table_with_stream(ddb, table_name)
     if not stream_arn:
         raise RuntimeError("No se pudo obtener Stream ARN de DynamoDB (streams no activados).")
 
-    # Build zips
     build_dir = ROOT / "infra" / ".build"
     build_dir.mkdir(exist_ok=True)
 
@@ -373,11 +351,9 @@ def main():
     fn_b = f"get_inventory_api_{suffix}"
     fn_c = f"notify_low_stock_{suffix}"
 
-    # Create/Update Lambdas
     arn_a = ensure_lambda(lamb, fn_a, lambda_role_arn, zip_a, {"TABLE_NAME": table_name})
     arn_b = ensure_lambda(lamb, fn_b, lambda_role_arn, zip_b, {"TABLE_NAME": table_name})
 
-    # SNS + Lambda C
     topic_name = f"inventory-low-stock-{suffix}"
     topic_arn = ensure_sns_topic_and_sub(sns, topic_name, notify_email)
 
@@ -389,19 +365,14 @@ def main():
         {"TOPIC_ARN": topic_arn, "THRESHOLD": str(threshold)},
     )
 
-    # S3 trigger for Lambda A
     ensure_s3_trigger(s3, lamb, uploads_bucket, arn_a)
 
-    # API Gateway -> Lambda B
     api_id, api_endpoint = ensure_http_api(apigw, lamb, f"inventory-api-{suffix}", arn_b, region, account_id)
 
-    # DynamoDB Streams -> Lambda C
     mapping_uuid = ensure_event_source_mapping(lamb, arn_c, stream_arn)
 
-    # Upload web
     upload_dir(s3, web_bucket, ROOT / "web")
 
-    # Presign web (index.html)
     url_index = presign(s3, web_bucket, "index.html", expires_seconds=3600)
 
     print("\n=== DEPLOY OK ===")

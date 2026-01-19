@@ -20,7 +20,6 @@ def lambda_handler(event, context):
         if not new_img:
             continue
 
-        # DynamoDB Streams format: {"S": "..."} / {"N": "..."}
         store = (new_img.get("Store") or {}).get("S")
         item = (new_img.get("Item") or {}).get("S")
         count_str = (new_img.get("Count") or {}).get("N")
